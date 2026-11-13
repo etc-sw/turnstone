@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>번짐 · 왕의 한 수</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e8ebee;--panel:#f5f7f9;--board:#c5cdd5;--line:#8d99a5;--ink:#15171c;--bone:#f7f5ef;--text:#1b1f26;--muted:#586371;--accent:#2a4fa8;--danger:#b5362c;
+  --display:'Hahmlet','Noto Serif KR','Apple SD Gothic Neo',serif;
+  --body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{color-scheme:dark;--paper:#11141a;--panel:#1a1f28;--board:#3a4452;--line:#5e6b7c;--ink:#090a0d;--bone:#eceae2;--text:#e6e9ee;--muted:#9ba6b4;--accent:#8fb0ff;--danger:#ff8a7a}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--text);font:400 15px/1.6 var(--body);-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:22px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font:800 34px/1.1 var(--display);margin:0;letter-spacing:-.02em}
+h1 small{display:block;font:500 15px/1.4 var(--body);color:var(--muted);letter-spacing:0;margin-top:6px}
+h2{font:800 17px/1.3 var(--display);margin:0 0 6px}
+.status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.chip{display:flex;align-items:center;gap:7px;padding:5px 11px 5px 8px;border-radius:999px;background:var(--panel);font-weight:600}
+.chip.me{box-shadow:inset 0 0 0 2px var(--accent)}
+.chip i{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.b{background:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bone) 40%,transparent)}
+.w{background:var(--bone);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.chip small{font-weight:400;color:var(--muted);font-size:12px}
+.year{font:800 20px/1 var(--display);font-variant-numeric:tabular-nums}
+#msg{margin:0;font:500 16px/1.4 var(--display);min-height:2.8em;text-wrap:balance}
+#hint{margin:0;font-size:14px;color:var(--muted);min-height:3.2em}
+#hint b{color:var(--text);font-weight:600}
+.board{display:grid;background:var(--board);border:1.5px solid var(--line);border-radius:6px;overflow:hidden;--fs:11px}
+.cell{aspect-ratio:1;display:grid;place-items:center;position:relative;border-right:1px solid color-mix(in srgb,var(--line) 55%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.cell.rg{background:color-mix(in srgb,var(--accent) 17%,transparent)}
+.cell.chg{animation:fl .5s ease-out}
+@keyframes fl{from{box-shadow:inset 0 0 0 99px color-mix(in srgb,var(--accent) 30%,transparent)}to{box-shadow:inset 0 0 0 99px transparent}}
+@media (prefers-reduced-motion:reduce){.cell.chg{animation:none}}
+.cell.can,.cell.dst{cursor:pointer}
+.cell.can .st{outline:2px solid var(--accent);outline-offset:1px}
+.cell.sel .st{outline:3px solid var(--accent);outline-offset:2px}
+.cell.dst::after{content:'';position:absolute;width:30%;height:30%;border-radius:50%;background:var(--accent)}
+.cell.dst.out::after{background:transparent;border:2px dashed var(--danger)}
+.cell.dst.swp::after{width:88%;height:88%;background:transparent;border:2.5px solid var(--accent)}
+.cell.dst.swp.out::after{border:2.5px dashed var(--danger)}
+.cell.dst.hit::after{width:88%;height:88%;border-radius:20%;background:transparent;border:2.5px solid var(--danger)}
+.st{width:78%;height:78%;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 var(--fs)/1 var(--body);user-select:none}
+.st.b{color:var(--bone)}.st.w{color:var(--ink)}
+.st.sq{border-radius:24%}
+.st.k{border-radius:24%;font-family:var(--display);font-weight:800;outline:2px solid var(--muted);outline-offset:1px}
+.st.r{border-radius:24%;transform:rotate(45deg);width:62%;height:62%}
+.st.r span{transform:rotate(-45deg);display:block}
+.st.r.feared{outline:2px solid var(--danger);outline-offset:1px}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select{font:600 14px/1 var(--body);color:var(--text);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:10px 13px;min-height:42px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:disabled{opacity:.45;cursor:default}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.card{background:var(--panel);border-radius:10px;padding:14px}
+ol.chron{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:260px;overflow:auto}
+ol.chron li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;font-size:14px;line-height:1.45}
+ol.chron li b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--muted)}
+ol.chron li.big{font-weight:600}
+ol.chron:empty::after{content:'아직 적을 만한 일이 없습니다.';color:var(--muted);font-size:14px}
+details{background:var(--panel);border-radius:10px;padding:12px 14px}
+summary{cursor:pointer;font:800 16px/1.3 var(--display)}
+details ul{margin:10px 0 0;padding-left:18px;font-size:14px}
+details li{margin:5px 0}
+.sub{color:var(--muted);font-size:13px;margin:0}
+.key{display:inline-flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--muted)}
+.key span{display:inline-flex;gap:6px;align-items:center}
+.key i{width:14px;height:14px;display:inline-block;flex:none;border-radius:3px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>번짐 <small>왕의 한 수 · 갈래 D 최소판. 세상은 저절로 돌고, 첫 왕이 서는 순간 당신이 그 왕입니다. 한 해에 한 수만 둡니다.</small></h1>
+  <div class="status">
+    <div class="chips">
+      <span class="chip" id="chB"><i class="b"></i><span id="cB">0</span><small id="dB"></small></span>
+      <span class="chip" id="chW"><i class="w"></i><span id="cW">0</span><small id="dW"></small></span>
+    </div>
+    <span class="year"><span id="yr">0</span>년</span>
+  </div>
+  <p id="msg" aria-live="polite"></p>
+  <div class="board" id="board"></div>
+  <div class="key">
+    <span><i style="background:color-mix(in srgb,var(--accent) 35%,var(--board))"></i>명이 닿는 범위</span>
+    <span><i style="background:var(--accent);border-radius:50%"></i>갈 수 있는 칸</span>
+    <span><i style="border:2px dashed var(--danger);border-radius:50%"></i>범위 밖: 손을 떠남</span>
+    <span><i style="border:2.5px solid var(--danger)"></i>벤다</span>
+  </div>
+  <p id="hint"></p>
+  <div class="ctl">
+    <button class="pri" id="pass" disabled>명 없이 한 해 (스페이스)</button>
+    <button id="fresh">새 세상</button>
+    <button id="again">다시</button>
+    <label class="sub" for="kR">범위</label><select id="kR"><option value="2" selected>두 칸</option><option value="3">세 칸</option></select>
+  </div>
+  <p class="sub" id="seed"></p>
+  <div class="card">
+    <h2>연대기</h2>
+    <ol class="chron" id="chron"></ol>
+  </div>
+  <details open>
+    <summary>왕의 규칙</summary>
+    <ul>
+      <li><b>한 해에 한 수.</b> 왕 자신을 주변 8칸 중 빈 칸으로 한 칸 옮기거나, 범위 안의 군사 하나를 상하좌우로 한 칸 옮깁니다. 옆의 내 농부와는 자리를 바꿉니다. 군사 옆에 적의 왕·군사나 도적이 있으면 그 자리로 보내 벨 수 있습니다. 아무 명도 안 내려도 됩니다.</li>
+      <li><b>곁의 군사는 곁을 지킵니다.</b> 범위 안의 군사는 범위에 들어온 적과 도적만 쫓고, 명 없이는 범위를 나서지 않습니다.</li>
+      <li><b>범위를 나선 군사는 손을 떠납니다.</b> 가장 가까운 적이나 도적을 제 뜻대로 쫓아갑니다. 어디로 갈지는 내가 정하지 못합니다. 쫓을 것이 없으면 왕 쪽으로 돌아오고, 범위에 들면 다시 명을 받습니다.</li>
+      <li><b>왕이 옮기면 범위도 옮겨 갑니다.</b> 범위에서 벗어난 군사는 그 순간부터 제 뜻대로 움직입니다.</li>
+      <li>내 수는 내 철의 군사가 움직이기 직전에 둡니다. 명을 받은 군사는 그 해에 더 움직이지 않습니다.</li>
+      <li>왕이 죽으면 군사는 도적으로 흩어지고, 내 색에 새 왕이 설 때까지 지켜보기만 합니다.</li>
+    </ul>
+  </details>
+  <details>
+    <summary>세상의 규칙 (저절로 도는 판과 같음)</summary>
+    <ul>
+      <li>한 해는 흑의 철, 백의 철 순서로 지나갑니다.</li>
+      <li><b>번식</b>: 내 농부 둘 사이에 낀 빈 칸에 농부가 태어납니다. <b>확장</b>: 농부는 떠난 자리가 다시 채워질 때만 빈 땅으로 나갑니다.</li>
+      <li><b>굶주림</b>: 상하좌우에 빈 땅이 없는 농부는 도적(마름모)이 됩니다.</li>
+      <li><b>도적</b>: 옆의 농부를 잡아먹습니다. 셋을 먹으면(빨간 테두리) 농부 둘 이상이 무릎을 꿇어 왕이 됩니다.</li>
+      <li><b>왕</b>: 두 칸 안의 자기 색 도적을 군사로 삼습니다.</li>
+      <li><b>군사</b>: 옆의 상대 왕, 상대 군사, 도적을 차례로 베고, 없으면 옆의 상대 농부를 복속시킵니다.</li>
+      <li>왕은 상대 군사나 상대 도적이 옆에 오면 죽습니다. 한 색만 남으면 끝납니다.</li>
+    </ul>
+  </details>
+</div>
+<script src="beonjim-engine.js"></script>
+<script>
+(function(){
+"use strict";
+var E=Beonjim,$=function(i){return document.getElementById(i);};
+var W=null,timer=null,seed=1,prev=null,sel=-1,ords=[],MAXY=400,NM=E.NM,GL=['','도','왕','군'];
+function myKing(){return W.player?E.findKing(W,W.player):-1;}
+function start(sd){clearTimeout(timer);seed=sd;W=E.newWorld(12,seed,{hungerShare:1,sight:4,range:+$('kR').value});W.claimFirst=true;prev=null;sel=-1;ords=[];
+  $('board').style.gridTemplateColumns='repeat('+W.N+',1fr)';$('board').textContent='';
+  for(var i=0;i<W.N*W.N;i++){var d=document.createElement('div');d.className='cell';d.dataset.i=i;$('board').appendChild(d);}
+  $('seed').textContent='세상 번호 '+seed+' · 같은 번호에 같은 수를 두면 같은 역사가 되풀이됩니다.';
+  $('chron').textContent='';draw('두 마을이 농부 여섯으로 시작합니다. 첫 왕이 설 때까지 지켜봅니다.');
+  timer=setTimeout(function(){advance();},500);}
+function cellHtml(p,k){var c=E.col(p)===1?'b':'w',t=E.typ(p);
+  if(t===E.F)return '<div class="st '+c+'"></div>';
+  if(t===E.R)return '<div class="st r '+c+(k>=E.NOTO?' feared':'')+'"><span>'+(k>0?k:'')+'</span></div>';
+  return '<div class="st '+(t===E.K?'k ':'sq ')+c+'">'+GL[t]+'</div>';}
+function keyOf(i){var p=W.b[i];return p*8+(E.typ(p)===E.R?Math.min(W.k[i],E.NOTO):0);}
+function draw(text){var cells=$('board').children,b=W.b,i,kc=myKing(),Rg=E.range(W),wait=E.awaiting(W);
+  var can={},dst={};if(wait)ords.forEach(function(o){can[o.from]=1;if(o.from===sel)dst[o.to]=o;});
+  for(i=0;i<b.length;i++){var key=keyOf(i),changed=prev&&prev[i]!==key,cl='cell';
+    if(!prev||changed)cells[i].innerHTML=b[i]?cellHtml(b[i],W.k[i]):'';
+    if(kc>=0&&E.cheb(W,i,kc)<=Rg)cl+=' rg';
+    if(can[i])cl+=' can';if(i===sel)cl+=' sel';
+    if(dst[i])cl+=' dst'+(dst[i].strike?' hit':'')+(dst[i].swap?' swp':'')+(dst[i].leaves&&!dst[i].strike?' out':'');
+    if(text!==null&&changed)cl+=' chg';
+    cells[i].className=cl;}
+  if(text!==null){prev=new Int16Array(b.length);for(i=0;i<b.length;i++)prev[i]=keyOf(i);}
+  var n=E.census(W),t1=n[1][0]+n[1][1]+n[1][2]+n[1][3],t2=n[2][0]+n[2][1]+n[2][2]+n[2][3];
+  $('cB').textContent=t1;$('cW').textContent=t2;
+  $('dB').textContent=(W.player===1?'나 · ':'')+'농 '+n[1][0]+' · 도 '+n[1][1]+' · 군 '+n[1][3]+(n[1][2]?' · 왕':'');
+  $('dW').textContent=(W.player===2?'나 · ':'')+'농 '+n[2][0]+' · 도 '+n[2][1]+' · 군 '+n[2][3]+(n[2][2]?' · 왕':'');
+  $('chB').className='chip'+(W.player===1?' me':'');$('chW').className='chip'+(W.player===2?' me':'');
+  $('yr').textContent=W.year;if(text!==null)$('msg').textContent=text;
+  $('pass').disabled=!wait;hint(wait);}
+function hint(wait){var h=$('hint');
+  if(W.over){h.textContent=W.over===W.player?'내 색이 천하를 얻었습니다.':W.player?'내 색은 사라졌습니다.':'왕이 서기도 전에 끝났습니다.';return;}
+  if(!wait){h.textContent=W.player?'왕이 없습니다. '+NM[W.player]+'에 새 왕이 설 때까지 지켜봅니다.':'세상이 저절로 돌고 있습니다.';return;}
+  var kc=myKing(),inr=0,outr=0;for(var i=0;i<W.b.length;i++)if(W.b[i]===W.player*8+E.S){if(E.cheb(W,i,kc)<=E.range(W))inr++;else outr++;}
+  h.innerHTML='<b>'+NM[W.player]+' 왕의 차례.</b> 곁의 군사 '+inr+', 손을 떠난 군사 '+outr+'. '+(sel<0?'왕이나 테두리가 쳐진 군사를 누르세요.':sel===kc?'왕이 옮길 칸을 누르세요. 범위가 함께 옮겨 갑니다.':'보낼 칸을 누르세요. 점선은 범위 밖입니다.');}
+function summary(){var y=W.ye,parts=[];
+  for(var c=1;c<=2;c++){var s=[];if(y.hunger[c])s.push('굶어서 도적 '+y.hunger[c]);if(y.eaten[c])s.push('도적이 잡아먹음 '+y.eaten[c]);if(y.conq[c])s.push('군사가 복속 '+y.conq[c]);if(s.length)parts.push(NM[c]+': '+s.join(', '));}
+  return parts.length?parts.join(' / '):'조용한 해입니다.';}
+/* 다음 멈출 곳까지 돌린다: 내 명을 기다리는 때, 왕 없이 지나간 한 해의 끝, 또는 끝 */
+function advance(cmd){clearTimeout(timer);if(W.over)return;var n0=W.log.length,had=W.player;
+  if(E.awaiting(W))E.tick(W,cmd||null);
+  while(!W.over&&!E.awaiting(W)){E.tick(W);if(W.ph===0&&(myKing()<0||W.year>=MAXY))break;}
+  sel=-1;ords=E.awaiting(W)?E.orders(W):[];
+  var fresh=W.log.slice(n0),big=fresh.filter(function(l){return l.big;});
+  if(!had&&W.player)fresh.push({y:W.year,t:'당신은 '+NM[W.player]+'의 왕입니다.',big:true});
+  fresh.forEach(function(l){var li=document.createElement('li');if(l.big)li.className='big';var b=document.createElement('b');b.textContent=l.y+'년';var s=document.createElement('span');s.textContent=l.t;li.appendChild(b);li.appendChild(s);$('chron').insertBefore(li,$('chron').firstChild);});
+  draw(big.length?big[big.length-1].t:summary());
+  if(W.over)return;
+  if(W.year>=MAXY&&!E.awaiting(W)){$('msg').textContent=MAXY+'년이 지나도 끝나지 않았습니다. 여기서 멈춥니다.';return;}
+  if(!E.awaiting(W))timer=setTimeout(function(){advance();},170);}
+$('board').onclick=function(ev){var c=ev.target.closest('.cell');if(!c||!W||!E.awaiting(W))return;var i=+c.dataset.i,hit=null;
+  ords.forEach(function(o){if(o.from===sel&&o.to===i)hit=o;});
+  if(hit){advance(hit);return;}
+  sel=ords.some(function(o){return o.from===i;})&&sel!==i?i:-1;draw(null);};
+$('pass').onclick=function(){if(W&&E.awaiting(W))advance(null);};
+document.addEventListener('keydown',function(ev){if(ev.code==='Space'&&W&&E.awaiting(W)&&!/^(BUTTON|SELECT|SUMMARY)$/.test(ev.target.tagName)){ev.preventDefault();advance(null);}});
+$('fresh').onclick=function(){start(1+Math.floor(Math.random()*9999));};
+$('again').onclick=function(){start(seed);};
+$('kR').onchange=function(){start(seed);};
+start(1+Math.floor(Math.random()*9999));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>번짐 · 저절로 도는 판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hahmlet:wght@500;800&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#e8ebee;--panel:#f5f7f9;--board:#c5cdd5;--line:#8d99a5;--ink:#15171c;--bone:#f7f5ef;--text:#1b1f26;--muted:#586371;--accent:#2a4fa8;--danger:#b5362c;
+  --display:'Hahmlet','Noto Serif KR','Apple SD Gothic Neo',serif;
+  --body:'IBM Plex Sans KR','Apple SD Gothic Neo','Malgun Gothic',system-ui,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{color-scheme:dark;--paper:#11141a;--panel:#1a1f28;--board:#3a4452;--line:#5e6b7c;--ink:#090a0d;--bone:#eceae2;--text:#e6e9ee;--muted:#9ba6b4;--accent:#8fb0ff;--danger:#ff8a7a}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--text);font:400 15px/1.6 var(--body);-webkit-text-size-adjust:100%}
+.wrap{max-width:560px;margin:0 auto;padding:22px 16px 48px;display:flex;flex-direction:column;gap:14px}
+h1{font:800 34px/1.1 var(--display);margin:0;letter-spacing:-.02em}
+h1 small{display:block;font:500 15px/1.4 var(--body);color:var(--muted);letter-spacing:0;margin-top:6px}
+h2{font:800 17px/1.3 var(--display);margin:0 0 6px}
+.status{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.chip{display:flex;align-items:center;gap:7px;padding:5px 11px 5px 8px;border-radius:999px;background:var(--panel);font-weight:600}
+.chip i,.sw{width:14px;height:14px;border-radius:50%;display:inline-block;flex:none}
+.b{background:var(--ink);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--bone) 40%,transparent)}
+.w{background:var(--bone);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.chip small{font-weight:400;color:var(--muted);font-size:12px}
+.year{font:800 20px/1 var(--display);font-variant-numeric:tabular-nums}
+#msg{margin:0;font:500 16px/1.4 var(--display);min-height:2.8em;text-wrap:balance}
+.board{display:grid;background:var(--board);border:1.5px solid var(--line);border-radius:6px;overflow:hidden;container-type:inline-size}
+.cell{aspect-ratio:1;display:grid;place-items:center;border-right:1px solid color-mix(in srgb,var(--line) 55%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 55%,transparent)}
+.cell.chg{animation:fl .5s ease-out}
+@keyframes fl{from{background:color-mix(in srgb,var(--accent) 32%,transparent)}to{background:transparent}}
+@media (prefers-reduced-motion:reduce){.cell.chg{animation:none}}
+.st{width:78%;height:78%;border-radius:50%;display:flex;align-items:center;justify-content:center;font:600 var(--fs,11px)/1 var(--body);user-select:none}
+.st.b{color:var(--bone)}.st.w{color:var(--ink)}
+.st.sq{border-radius:24%}
+.st.k{border-radius:24%;font-family:var(--display);font-weight:800;outline:2px solid var(--accent);outline-offset:1px}
+.st.r{border-radius:24%;transform:rotate(45deg);width:62%;height:62%}
+.st.r span{transform:rotate(-45deg);display:block}
+.st.r.feared{outline:2px solid var(--danger);outline-offset:1px}
+.st sup{font-size:.7em;margin-left:1px;line-height:1}
+.ctl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button,select{font:600 14px/1 var(--body);color:var(--text);background:var(--panel);border:1.5px solid var(--line);border-radius:8px;padding:10px 13px;min-height:42px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button:focus-visible,select:focus-visible,summary:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+button.pri{background:var(--accent);border-color:var(--accent);color:var(--paper)}
+.seg{display:flex;border:1.5px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;min-height:39px;padding:8px 11px;background:var(--panel)}
+.seg button[aria-pressed="true"]{background:var(--text);color:var(--paper)}
+.card{background:var(--panel);border-radius:10px;padding:14px}
+.legend{display:flex;gap:14px;align-items:center;font-size:13px;color:var(--muted);flex-wrap:wrap;margin-bottom:6px}
+.legend span{display:inline-flex;gap:6px;align-items:center}
+.plot{position:relative;background:var(--board);border-radius:6px}
+.plot svg{display:block;width:100%;height:auto;touch-action:pan-y}
+.plot text{font:500 11px var(--body);fill:var(--text);font-variant-numeric:tabular-nums}
+.plot .ax{fill:color-mix(in srgb,var(--text) 72%,transparent)}
+.tip{position:absolute;top:6px;pointer-events:none;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:6px 9px;font-size:12px;line-height:1.5;white-space:nowrap;display:none;font-variant-numeric:tabular-nums}
+.tip b{font-weight:600}
+.tip div{display:flex;gap:6px;align-items:center}
+ol.chron{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px;max-height:300px;overflow:auto}
+ol.chron li{display:grid;grid-template-columns:3.4em 1fr;gap:8px;font-size:14px;line-height:1.45}
+ol.chron li b{font-variant-numeric:tabular-nums;font-weight:600;color:var(--muted)}
+ol.chron li.big{font-weight:600}
+ol.chron:empty::after{content:'아직 적을 만한 일이 없습니다.';color:var(--muted);font-size:14px}
+details{background:var(--panel);border-radius:10px;padding:12px 14px}
+summary{cursor:pointer;font:800 16px/1.3 var(--display)}
+details ul{margin:10px 0 0;padding-left:18px;font-size:14px}
+details li{margin:5px 0}
+.knobs{display:grid;grid-template-columns:1fr auto;gap:10px 12px;align-items:center;margin-top:12px;font-size:14px}
+.knobs select{min-height:40px;padding:8px 10px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums;margin-top:10px}
+th,td{text-align:right;padding:4px 6px;border-bottom:1px solid color-mix(in srgb,var(--line) 40%,transparent)}
+th:first-child,td:first-child{text-align:left}
+.sub{color:var(--muted);font-size:13px;margin:0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>번짐 <small>저절로 도는 판 · 시험판. 아무도 두지 않습니다. 규칙만으로 왕조가 서고 무너지는지 구경하는 판입니다.</small></h1>
+  <div class="status">
+    <div class="chips">
+      <span class="chip"><i class="b"></i><span id="cB">0</span><small id="dB"></small></span>
+      <span class="chip"><i class="w"></i><span id="cW">0</span><small id="dW"></small></span>
+    </div>
+    <span class="year"><span id="yr">0</span>년</span>
+  </div>
+  <p id="msg" aria-live="polite"></p>
+  <div class="board" id="board" role="img" aria-label="판"></div>
+  <div class="ctl">
+    <button class="pri" id="play">멈춤</button>
+    <button id="step">한 해</button>
+    <div class="seg" role="group" aria-label="빠르기">
+      <button data-sp="650" aria-pressed="false">느리게</button><button data-sp="260" aria-pressed="true">보통</button><button data-sp="70" aria-pressed="false">빠르게</button>
+    </div>
+    <button id="fresh">새 세상</button>
+    <button id="again">다시</button>
+  </div>
+  <p class="sub" id="seed"></p>
+  <div class="card">
+    <h2>사람 수</h2>
+    <div class="legend"><span><i class="sw b"></i>흑</span><span><i class="sw w"></i>백</span><span>아래 띠: 왕이 있던 해</span></div>
+    <div class="plot" id="plot"><svg id="chart" viewBox="0 0 520 190" role="img" aria-label="해마다 흑과 백의 사람 수"></svg><div class="tip" id="tip"></div></div>
+    <details style="padding:10px 0 0;background:none"><summary style="font:600 14px var(--body)">표로 보기</summary><table id="tbl"></table></details>
+  </div>
+  <div class="card">
+    <h2>연대기</h2>
+    <ol class="chron" id="chron"></ol>
+  </div>
+  <details>
+    <summary>실험 손잡이</summary>
+    <div class="knobs">
+      <label for="kN">판 크기</label><select id="kN"><option value="10">10×10</option><option value="12" selected>12×12</option><option value="16">16×16</option></select>
+      <label for="kH">굶는 기준</label><select id="kH"><option value="0" selected>상하좌우에 빈 땅이 없을 때</option><option value="1">주변 8칸에 빈 땅이 없을 때</option></select>
+      <label for="kS">굶는 사람 중 도적이 되는 몫</label><select id="kS"><option value="1" selected>전부</option><option value="0.5">절반</option><option value="0.25">넷 중 하나</option></select>
+      <label for="kV">도적이 농부를 알아보는 거리</label><select id="kV"><option value="2">두 칸</option><option value="4" selected>네 칸</option><option value="7">일곱 칸</option></select>
+    </div>
+    <p class="sub" style="margin-top:10px">손잡이를 바꾸면 같은 세상을 처음부터 다시 돌립니다.</p>
+  </details>
+  <details>
+    <summary>이 판의 규칙</summary>
+    <ul>
+      <li>한 해는 흑의 철, 백의 철 순서로 지나갑니다. 각 철에 그 색의 말이 아래 순서로 움직입니다.</li>
+      <li><b>번식</b>: 내 농부 둘 사이에 낀 빈 칸(좌우 또는 위아래)에 농부가 태어납니다.</li>
+      <li><b>확장</b>: 농부는 떠난 자리가 다시 "농부 둘 사이"가 될 때만 옆의 빈 땅으로 한 칸 나갑니다. 등 뒤에 내 농부가 있거나, 양옆에 내 농부가 있을 때입니다. 가장 트인 쪽을 고릅니다.</li>
+      <li><b>굶주림</b>: 나갈 빈 땅이 없는 농부는 도적(마름모)이 됩니다.</li>
+      <li><b>도적</b>: 상하좌우에 농부가 있으면 잡아먹고 그 자리로 갑니다(상대 농부를 먼저, 없으면 자기 편도). 옆에 없으면 보이는 농부 쪽으로 한 칸 갑니다. 농부가 안 보이고 빈 땅이 있으면 농부로 돌아옵니다. 사방이 막히고 먹을 것도 없으면 죽습니다. 숫자는 잡아먹은 수입니다.</li>
+      <li><b>악명</b>: 셋을 잡아먹은 도적(빨간 테두리)은 더 먹지 않고 농부를 찾아갑니다. 주변 8칸에 농부가 둘 이상 있으면 그들이 무릎을 꿇고, 도적은 왕이 됩니다. 꿇은 농부는 왕의 색이 됩니다. 한 색에 왕은 하나입니다.</li>
+      <li><b>왕</b>: 움직이지 않습니다. 두 칸 안의 자기 색 도적을 군사로 삼습니다.</li>
+      <li><b>군사</b>: 옆의 상대 왕, 상대 군사, 도적(누구 도적이든)을 차례로 벱니다. 벨 것이 없으면 옆의 상대 농부를 자기 색으로 복속시킵니다. 그것도 없으면 적이나 도적 쪽으로 걷습니다.</li>
+      <li><b>왕의 죽음</b>: 상대 군사나 상대 도적이 옆에 와서 죽입니다. 왕이 죽으면 군사는 전부 도적으로 흩어집니다.</li>
+      <li>한 색만 남으면 끝납니다.</li>
+    </ul>
+  </details>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---- engine: no player. One year = black's season, then white's. ---- */
+var F=0,R=1,K=2,S=3,NOTO=3;
+function rng(seed){var a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function newWorld(N,seed,opt){
+  var w={N:N,b:new Int8Array(N*N),k:new Int8Array(N*N),year:0,rand:rng(seed),seed:seed,opt:opt||{},log:[],OR:[],NB:[],hist:[],over:0,stat:{},lastF:[],lastC:[],ye:{hunger:[0,0,0],eaten:[0,0,0],conq:[0,0,0]}};
+  for(var i=0;i<N*N;i++){var r=Math.floor(i/N),c=i%N,o=[],n=[];
+    for(var dr=-1;dr<=1;dr++)for(var dc=-1;dc<=1;dc++){if(!dr&&!dc)continue;var rr=r+dr,cc=c+dc;if(rr<0||cc<0||rr>=N||cc>=N)continue;n.push(rr*N+cc);if(!dr||!dc)o.push(rr*N+cc);}
+    w.OR.push(o);w.NB.push(n);}
+  var w0=Math.floor((N-6)/2),sh=Math.floor(w.rand()*3)-1,sh2=Math.floor(w.rand()*3)-1;
+  for(c=0;c<6;c++){w.b[1*N+w0+c+sh]=16;w.b[(N-2)*N+w0+c+sh2]=8;}
+  return w;}
+function col(p){return p>>3;}function typ(p){return p&7;}
+function shuffle(a,rand){for(var i=a.length-1;i>0;i--){var j=Math.floor(rand()*(i+1)),t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function dist(w,a,c){var N=w.N;return Math.abs(Math.floor(a/N)-Math.floor(c/N))+Math.abs(a%N-c%N);}
+function cheb(w,a,c){var N=w.N;return Math.max(Math.abs(Math.floor(a/N)-Math.floor(c/N)),Math.abs(a%N-c%N));}
+function at(w,r,c){return(r<0||c<0||r>=w.N||c>=w.N)?-1:w.b[r*w.N+c];}
+function between(w,i,c){var N=w.N,r=Math.floor(i/N),x=i%N,f=c*8+F;return(at(w,r,x-1)===f&&at(w,r,x+1)===f)||(at(w,r-1,x)===f&&at(w,r+1,x)===f);}
+function hasLand(w,i){var o=w.opt.hunger8?w.NB[i]:w.OR[i];for(var k=0;k<o.length;k++)if(!w.b[o[k]])return true;return false;}
+function findKing(w,c){for(var i=0;i<w.b.length;i++)if(w.b[i]===c*8+K)return i;return -1;}
+function move(w,from,to){w.b[to]=w.b[from];w.k[to]=w.k[from];w.b[from]=0;w.k[from]=0;}
+function note(w,c,text,big){w.log.push({y:w.year,c:c,t:text,big:!!big});}
+function stepToward(w,i,target,avoid){   /* one orthogonal step that brings i closer to target, into an empty cell */
+  var o=shuffle(w.OR[i].slice(),w.rand),best=-1,bd=dist(w,i,target);
+  for(var k=0;k<o.length;k++){if(w.b[o[k]])continue;var d=dist(w,o[k],target);if(d<bd){bd=d;best=o[k];}}
+  return best;}
+function nearest(w,i,sight,test){var best=-1,bd=99;for(var j=0;j<w.b.length;j++){var p=w.b[j];if(!p||j===i||!test(p,j))continue;var d=dist(w,i,j);if(d<=sight&&(d<bd||(d===bd&&w.rand()<0.5))){bd=d;best=j;}}return best;}
+function fallOfKing(w,c,why){   /* the army scatters */
+  var n=0;for(var i=0;i<w.b.length;i++)if(w.b[i]===c*8+S){w.b[i]=c*8+R;w.k[i]=0;n++;}
+  note(w,c,why+(n?' 군사 '+n+'명이 도적으로 흩어집니다.':''),true);w.stat.fall=(w.stat.fall||0)+1;}
+function season(w,c){
+  var b=w.b,N=w.N,i,k,o,p,ch=[],e=3-c,nm=['','흑','백'][c];
+  /* 1 births: an empty cell between two farmers of mine */
+  for(i=0;i<b.length;i++)if(!b[i]&&between(w,i,c))ch.push(i);
+  for(k=0;k<ch.length;k++)b[ch[k]]=c*8+F;
+  /* 2 farmers push out: a farmer steps to open land if the cell he leaves will lie between two farmers of his own (himself and one at his back, or the two at his sides), so that a child is born there */
+  var fs=[],used=new Uint8Array(b.length),f=c*8+F;for(i=0;i<b.length;i++)if(b[i]===f)fs.push(i);
+  shuffle(fs,w.rand);
+  for(k=0;k<fs.length;k++){i=fs[k];if(used[i])continue;var r0=Math.floor(i/N),c0=i%N,ds=shuffle([[0,1],[0,-1],[1,0],[-1,0]],w.rand),best=-1,bs=-1,an=null;
+    for(var j=0;j<4;j++){var dr=ds[j][0],dc=ds[j][1],fr=r0+dr,fc=c0+dc;if(at(w,fr,fc)!==0)continue;var anc=null;
+      if(at(w,r0-dr,c0-dc)===f&&!used[(r0-dr)*N+c0-dc])anc=[(r0-dr)*N+c0-dc];                                     /* one at his back */
+      else if(at(w,r0+dc,c0+dr)===f&&at(w,r0-dc,c0-dr)===f)anc=[(r0+dc)*N+c0+dr,(r0-dc)*N+c0-dr];                 /* one on either side */
+      if(!anc)continue;
+      var s=0,oo=w.OR[fr*N+fc];for(var q=0;q<oo.length;q++)if(!b[oo[q]])s++;if(s>bs){bs=s;best=fr*N+fc;an=anc;}}
+    if(best>=0){move(w,i,best);used[best]=1;for(j=0;j<an.length;j++)used[an[j]]=1;}}
+  /* 3 hunger: no land beside him */
+  ch=[];for(i=0;i<b.length;i++)if(b[i]===c*8+F&&!hasLand(w,i))ch.push(i);
+  if(w.opt.hungerShare<1){ch=ch.filter(function(){return w.rand()<w.opt.hungerShare;});}
+  for(k=0;k<ch.length;k++){b[ch[k]]=c*8+R;w.k[ch[k]]=0;}
+  w.stat.hunger=(w.stat.hunger||0)+ch.length;w.ye.hunger[c]+=ch.length;
+  /* 4 rogues */
+  var rs=[];for(i=0;i<b.length;i++)if(b[i]===c*8+R)rs.push(i);shuffle(rs,w.rand);
+  for(k=0;k<rs.length;k++){i=rs[k];if(b[i]!==c*8+R)continue;o=w.OR[i];
+    if(w.k[i]>=NOTO){   /* feared: farmers beside him bow; two of them make him king */
+      var subj=[],nb=w.NB[i];for(j=0;j<nb.length;j++)if(typ(b[nb[j]])===F&&b[nb[j]])subj.push(nb[j]);
+      if(subj.length>=2&&findKing(w,c)<0){b[i]=c*8+K;w.k[i]=0;for(j=0;j<subj.length;j++)b[subj[j]]=c*8+F;note(w,c,nm+'에 왕이 섰습니다. 셋을 잡아먹은 도적에게 농부 '+subj.length+'명이 무릎을 꿇었습니다.',true);w.stat.crown=(w.stat.crown||0)+1;continue;}
+      var t=nearest(w,i,6,function(p){return typ(p)===F;});if(t>=0){var st=stepToward(w,i,t);if(st>=0)move(w,i,st);}
+      continue;}
+    var prey=[],preyOwn=[];for(j=0;j<o.length;j++){p=b[o[j]];if(!p)continue;if(typ(p)===F||(typ(p)===K&&col(p)!==c)){(col(p)===c?preyOwn:prey).push(o[j]);}}
+    if(!prey.length)prey=preyOwn;
+    if(prey.length){var v=prey[Math.floor(w.rand()*prey.length)],wasK=typ(b[v])===K,vc=col(b[v]);b[v]=0;w.k[v]=0;move(w,i,v);w.k[v]++;w.stat.eaten=(w.stat.eaten||0)+1;w.ye.eaten[c]++;
+      if(wasK)fallOfKing(w,vc,['','흑','백'][vc]+' 왕이 도적에게 죽었습니다.');
+      continue;}
+    var land=false,full=true;for(j=0;j<o.length;j++)if(!b[o[j]]){land=true;full=false;}
+    t=nearest(w,i,w.opt.sight||4,function(p){return typ(p)===F;});
+    if(t>=0){st=stepToward(w,i,t);if(st>=0){move(w,i,st);continue;}}
+    if(t<0&&land){b[i]=c*8+F;w.k[i]=0;w.stat.settle=(w.stat.settle||0)+1;continue;}   /* nobody to rob, land to till */
+    if(full){b[i]=0;w.k[i]=0;w.stat.feud=(w.stat.feud||0)+1;}}   /* hemmed in with nothing to eat */
+  /* 5 the king takes rogues of his own within two cells into his army */
+  var kc=findKing(w,c);
+  if(kc>=0){for(i=0;i<b.length;i++)if(b[i]===c*8+R&&cheb(w,i,kc)<=2){b[i]=c*8+S;w.k[i]=0;w.stat.hire=(w.stat.hire||0)+1;}}
+  else{var any=false;for(i=0;i<b.length;i++)if(b[i]===c*8+S){b[i]=c*8+R;w.k[i]=0;any=true;}}
+  /* 6 soldiers: strike what stands beside them, bring enemy farmers over, else march */
+  var ss=[];for(i=0;i<b.length;i++)if(b[i]===c*8+S)ss.push(i);shuffle(ss,w.rand);
+  for(k=0;k<ss.length;k++){i=ss[k];if(b[i]!==c*8+S)continue;o=w.OR[i];var tk=-1,ts=-1,tr=-1;
+    for(j=0;j<o.length;j++){p=b[o[j]];if(!p)continue;if(col(p)===e&&typ(p)===K)tk=o[j];else if(col(p)===e&&typ(p)===S)ts=o[j];else if(typ(p)===R)tr=o[j];}
+    v=tk>=0?tk:ts>=0?ts:tr;
+    if(v>=0){wasK=typ(b[v])===K;b[v]=0;w.k[v]=0;move(w,i,v);w.stat.slain=(w.stat.slain||0)+1;if(wasK)fallOfKing(w,e,['','흑','백'][e]+' 왕이 '+nm+' 군사에게 죽었습니다.');continue;}
+    var conv=0;for(j=0;j<o.length;j++)if(b[o[j]]===e*8+F){b[o[j]]=c*8+F;conv++;}
+    if(conv){w.stat.conq=(w.stat.conq||0)+conv;w.ye.conq[c]+=conv;continue;}
+    t=nearest(w,i,w.opt.march||6,function(p){return typ(p)===R||col(p)===e;});
+    if(t>=0){st=stepToward(w,i,t);if(st>=0)move(w,i,st);}
+    else if(kc>=0&&cheb(w,i,kc)>3){st=stepToward(w,i,kc);if(st>=0)move(w,i,st);}}
+}
+function census(w){var n=[[0,0,0,0],[0,0,0,0],[0,0,0,0]];for(var i=0;i<w.b.length;i++)if(w.b[i])n[col(w.b[i])][typ(w.b[i])]++;return n;}
+function year(w){if(w.over)return;w.year++;w.ye={hunger:[0,0,0],eaten:[0,0,0],conq:[0,0,0]};season(w,1);season(w,2);
+  for(var c=1;c<=2;c++){var nm=['','흑','백'][c];
+    if(w.ye.hunger[c]>=8&&w.year-(w.lastF[c]||-99)>6){w.lastF[c]=w.year;note(w,c,nm+'에 큰 기근: 농부 '+w.ye.hunger[c]+'명이 도적이 됐습니다.');}
+    if(w.ye.conq[c]>=8&&w.year-(w.lastC[c]||-99)>6){w.lastC[c]=w.year;note(w,c,nm+' 군사가 한 해에 농부 '+w.ye.conq[c]+'명을 복속시켰습니다.');}}
+  var n=census(w),t1=n[1][0]+n[1][1]+n[1][2]+n[1][3],t2=n[2][0]+n[2][1]+n[2][2]+n[2][3];
+  w.hist.push([t1,t2,n[1][1],n[2][1],n[1][3],n[2][3],n[1][2],n[2][2]]);
+  if(!t1||!t2){w.over=t1?1:t2?2:3;note(w,w.over===3?0:w.over,w.over===3?'아무도 남지 않았습니다.':['','흑','백'][w.over]+'만 남았습니다.',true);}}
+
+/* ---- view ---- */
+var $=function(i){return document.getElementById(i);};
+var W=null,timer=null,playing=true,speed=260,prev=null,seed=1,MAXY=600;
+var NM=['','흑','백'],GL=['','도','왕','군'];
+function opts(){return {hunger8:$('kH').value==='1',hungerShare:+$('kS').value,sight:+$('kV').value};}
+function start(sd){seed=sd;W=newWorld(+$('kN').value,seed,opts());prev=null;
+  $('board').style.gridTemplateColumns='repeat('+W.N+',1fr)';$('board').style.setProperty('--fs',W.N>=16?'8px':W.N>=12?'11px':'13px');
+  $('board').textContent='';for(var i=0;i<W.N*W.N;i++){var d=document.createElement('div');d.className='cell';$('board').appendChild(d);}
+  $('seed').textContent='세상 번호 '+seed+' · 같은 번호와 같은 손잡이면 같은 역사가 되풀이됩니다.';
+  $('chron').textContent='';draw('두 마을이 농부 여섯으로 시작합니다.');}
+function cellHtml(p,k){var c=col(p)===1?'b':'w',t=typ(p);
+  if(t===F)return '<div class="st '+c+'"></div>';
+  if(t===R)return '<div class="st r '+c+(k>=NOTO?' feared':'')+'"><span>'+(k>0?k:'')+'</span></div>';
+  return '<div class="st '+(t===K?'k ':'sq ')+c+'">'+GL[t]+'</div>';}
+function draw(text){var cells=$('board').children,b=W.b,i;
+  for(i=0;i<b.length;i++){var key=b[i]*8+(typ(b[i])===R?Math.min(W.k[i],NOTO):0);
+    if(!prev||prev[i]!==key){cells[i].innerHTML=b[i]?cellHtml(b[i],W.k[i]):'';if(prev){cells[i].classList.remove('chg');void cells[i].offsetWidth;cells[i].classList.add('chg');}}
+    if(!prev)cells[i].classList.remove('chg');}
+  prev=new Int16Array(b.length);for(i=0;i<b.length;i++)prev[i]=b[i]*8+(typ(b[i])===R?Math.min(W.k[i],NOTO):0);
+  var n=census(W),t1=n[1][0]+n[1][1]+n[1][2]+n[1][3],t2=n[2][0]+n[2][1]+n[2][2]+n[2][3];
+  $('cB').textContent=t1;$('cW').textContent=t2;
+  $('dB').textContent='농 '+n[1][0]+' · 도 '+n[1][1]+' · 군 '+n[1][3]+(n[1][2]?' · 왕':'');
+  $('dW').textContent='농 '+n[2][0]+' · 도 '+n[2][1]+' · 군 '+n[2][3]+(n[2][2]?' · 왕':'');
+  $('yr').textContent=W.year;$('msg').textContent=text;
+  $('board').setAttribute('aria-label',W.year+'년. 흑 '+t1+'명, 백 '+t2+'명.');
+  chart();}
+function summary(){var y=W.ye,parts=[];
+  for(var c=1;c<=2;c++){var s=[];if(y.hunger[c])s.push('굶어서 도적 '+y.hunger[c]);if(y.eaten[c])s.push('도적이 잡아먹음 '+y.eaten[c]);if(y.conq[c])s.push('군사가 복속 '+y.conq[c]);if(s.length)parts.push(NM[c]+': '+s.join(', '));}
+  return parts.length?parts.join(' / '):'조용한 해입니다.';}
+function tick(){if(!W||W.over)return;var n0=W.log.length;year(W);
+  var fresh=W.log.slice(n0),big=fresh.filter(function(l){return l.big;});
+  fresh.forEach(function(l){var li=document.createElement('li');if(l.big)li.className='big';var b=document.createElement('b');b.textContent=l.y+'년';var s=document.createElement('span');s.textContent=l.t;li.appendChild(b);li.appendChild(s);$('chron').insertBefore(li,$('chron').firstChild);});
+  draw(big.length?big[big.length-1].t:summary());
+  if(W.over||W.year>=MAXY){if(!W.over)$('msg').textContent=MAXY+'년이 지나도 끝나지 않았습니다. 여기서 멈춥니다.';setPlay(false);}}
+function loop(){clearTimeout(timer);if(!playing)return;timer=setTimeout(function(){tick();loop();},speed);}
+function setPlay(p){playing=p&&!(W.over||W.year>=MAXY);$('play').textContent=playing?'멈춤':'재생';loop();}
+$('play').onclick=function(){setPlay(!playing);};
+$('step').onclick=function(){setPlay(false);tick();};
+$('fresh').onclick=function(){start(1+Math.floor(Math.random()*9999));setPlay(true);};
+$('again').onclick=function(){start(seed);setPlay(true);};
+[].forEach.call(document.querySelectorAll('.seg button'),function(bt){bt.onclick=function(){speed=+bt.dataset.sp;[].forEach.call(document.querySelectorAll('.seg button'),function(x){x.setAttribute('aria-pressed',x===bt?'true':'false');});loop();};});
+['kN','kH','kS','kV'].forEach(function(id){$(id).onchange=function(){start(seed);setPlay(true);};});
+/* ---- chart: two lines (total people of each colour), reign strips, crosshair + readout, table ---- */
+var G={l:30,r:52,t:10,b:34,w:520,h:190};
+function el(tag,at){var e=document.createElementNS('http://www.w3.org/2000/svg',tag);for(var k in at)e.setAttribute(k,at[k]);return e;}
+function chart(){var svg=$('chart'),H=W.hist,n=H.length,pw=G.w-G.l-G.r,ph=G.h-G.t-G.b,i;
+  svg.textContent='';var mx=10;for(i=0;i<n;i++)mx=Math.max(mx,H[i][0],H[i][1]);mx=Math.ceil(mx/20)*20;var xm=Math.max(40,n);
+  function X(i){return G.l+(i+1)/xm*pw;}function Y(v){return G.t+ph-v/mx*ph;}
+  [0,mx/2,mx].forEach(function(v){svg.appendChild(el('line',{x1:G.l,x2:G.l+pw,y1:Y(v),y2:Y(v),stroke:'var(--line)','stroke-opacity':v?0.45:0.9,'stroke-width':1}));var t=el('text',{x:G.l-5,y:Y(v)+4,'text-anchor':'end','class':'ax'});t.textContent=v;svg.appendChild(t);});
+  var t0=el('text',{x:G.l,y:G.h-3,'class':'ax'});t0.textContent='1년';svg.appendChild(t0);var t1=el('text',{x:G.l+pw,y:G.h-3,'text-anchor':'end','class':'ax'});t1.textContent=xm+'년';svg.appendChild(t1);
+  function path(idx){var d='';for(var i=0;i<n;i++)d+=(i?'L':'M')+X(i).toFixed(1)+' '+Y(H[i][idx]).toFixed(1);return d;}
+  if(n){   /* the two sides are black and white by nature, so each line wears a thin casing of the other tone to stay visible on the board colour */
+    svg.appendChild(el('path',{d:path(1),fill:'none',stroke:'var(--ink)','stroke-width':4,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    svg.appendChild(el('path',{d:path(1),fill:'none',stroke:'var(--bone)','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    svg.appendChild(el('path',{d:path(0),fill:'none',stroke:'var(--board)','stroke-width':4,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    svg.appendChild(el('path',{d:path(0),fill:'none',stroke:'var(--ink)','stroke-width':2,'stroke-linejoin':'round','stroke-linecap':'round'}));
+    var last=H[n-1],yb=Y(last[0]),yw=Y(last[1]);if(Math.abs(yb-yw)<13){var mid=(yb+yw)/2;if(yb<=yw){yb=mid-6.5;yw=mid+6.5;}else{yb=mid+6.5;yw=mid-6.5;}}
+    svg.appendChild(el('circle',{cx:X(n-1),cy:Y(last[1]),r:4,fill:'var(--bone)',stroke:'var(--ink)','stroke-width':1.5}));
+    svg.appendChild(el('circle',{cx:X(n-1),cy:Y(last[0]),r:4,fill:'var(--ink)',stroke:'var(--board)','stroke-width':2}));
+    var lb=el('text',{x:X(n-1)+8,y:yb+4});lb.textContent='흑 '+last[0];svg.appendChild(lb);var lw=el('text',{x:X(n-1)+8,y:yw+4});lw.textContent='백 '+last[1];svg.appendChild(lw);
+    for(var s=0;s<2;s++){var y0=G.t+ph+6+s*7,run=-1;   /* reign strips */
+      for(i=0;i<=n;i++){var on=i<n&&H[i][6+s]>0;if(on&&run<0)run=i;if(!on&&run>=0){svg.appendChild(el('rect',{x:X(run)-pw/xm/2,y:y0,width:Math.max(2,(i-run)*pw/xm),height:4,rx:2,fill:s?'var(--bone)':'var(--ink)',stroke:s?'var(--ink)':'none','stroke-width':0.75}));run=-1;}}}}
+  var hair=el('line',{y1:G.t,y2:G.t+ph,stroke:'var(--text)','stroke-width':1,'stroke-opacity':0.7,visibility:'hidden'});svg.appendChild(hair);
+  var hit=el('rect',{x:G.l,y:G.t,width:pw,height:ph+18,fill:'transparent'});svg.appendChild(hit);
+  function show(ev){if(!n)return;var r=svg.getBoundingClientRect(),px=(ev.clientX-r.left)/r.width*G.w,i=Math.max(0,Math.min(n-1,Math.round((px-G.l)/pw*xm-1))),h=H[i],tip=$('tip');
+    hair.setAttribute('x1',X(i));hair.setAttribute('x2',X(i));hair.setAttribute('visibility','visible');
+    tip.textContent='';var hd=document.createElement('div');var hb=document.createElement('b');hb.textContent=(i+1)+'년';hd.appendChild(hb);tip.appendChild(hd);
+    [[0,'b','흑',2,4,6],[1,'w','백',3,5,7]].forEach(function(a){var d=document.createElement('div'),sw=document.createElement('i');sw.className='sw '+a[1];sw.style.width=sw.style.height='10px';var v=document.createElement('b');v.textContent=h[a[0]]+'명';var t=document.createElement('span');t.textContent=a[2]+' · 도적 '+h[a[3]]+' · 군사 '+h[a[4]]+(h[a[5]]?' · 왕':'');d.appendChild(sw);d.appendChild(v);d.appendChild(t);tip.appendChild(d);});
+    tip.style.display='block';var left=X(i)/G.w*r.width+10;if(left+tip.offsetWidth>r.width-4)left=X(i)/G.w*r.width-tip.offsetWidth-10;tip.style.left=Math.max(4,left)+'px';}
+  function hide(){hair.setAttribute('visibility','hidden');$('tip').style.display='none';}
+  hit.addEventListener('pointermove',show);hit.addEventListener('pointerdown',show);hit.addEventListener('pointerleave',hide);
+  var tb=$('tbl');if(tb.parentNode.open||!n){tb.textContent='';var hr=tb.insertRow();['해','흑','백','흑 도적','백 도적','흑 군사','백 군사','왕'].forEach(function(x){var th=document.createElement('th');th.textContent=x;hr.appendChild(th);});
+    var stepN=Math.max(1,Math.ceil(n/14));for(i=n-1;i>=0;i-=stepN){var h2=H[i],tr=tb.insertRow();[i+1,h2[0],h2[1],h2[2],h2[3],h2[4],h2[5],(h2[6]?'흑 ':'')+(h2[7]?'백':'')||'없음'].forEach(function(x){var td=tr.insertCell();td.textContent=x;});}}
+}
+$('tbl').parentNode.addEventListener('toggle',function(){if(W)chart();});
+start(1+Math.floor(Math.random()*9999));setPlay(true);
+})();
+</script>
+</body>
+</html>
